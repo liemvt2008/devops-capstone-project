@@ -9,6 +9,7 @@ from service.models import Account
 from service.common import status  # HTTP Status Codes
 from . import app  # Import Flask application
 
+HEADER_CONTENT_TYPE = "application/json"
 
 ############################################################
 # Health Endpoint
@@ -85,8 +86,28 @@ def get_accounts(account_id):
 ######################################################################
 # UPDATE AN EXISTING ACCOUNT
 ######################################################################
+@app.route("/accounts/<int:account_id>", methods=["PUT"])
+def update_account(account_id: int):
+    """ Update an account depending on supplied ID """
+    app.logger.info("Request to update an account")
 
-# ... place you code here to UPDATE an account ...
+    check_content_type(HEADER_CONTENT_TYPE)
+
+    account = Account.find(account_id)
+
+    if account is None:
+        app.logger.info("No account with ID %s found.", account_id)
+        response_status = status.HTTP_404_NOT_FOUND
+        message = f"Status Code: {response_status}"
+    else:
+        app.logger.info("Account with ID %s found.", account_id)
+        response_status = status.HTTP_200_OK
+        account.deserialize(request.get_json())
+        account.id = account_id
+        account.update()
+        message = account.serialize()
+
+    return jsonify(message), response_status
 
 
 ######################################################################
