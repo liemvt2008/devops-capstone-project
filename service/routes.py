@@ -11,6 +11,7 @@ from . import app  # Import Flask application
 
 HEADER_CONTENT_TYPE = "application/json"
 
+
 ############################################################
 # Health Endpoint
 ############################################################
@@ -46,7 +47,7 @@ def create_accounts():
     This endpoint will create an Account based the data in the body that is posted
     """
     app.logger.info("Request to create an Account")
-    check_content_type("application/json")
+    check_content_type(HEADER_CONTENT_TYPE)
     account = Account()
     account.deserialize(request.get_json())
     account.create()
@@ -57,6 +58,7 @@ def create_accounts():
     return make_response(
         jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
     )
+
 
 ######################################################################
 # LIST ALL ACCOUNTS
@@ -81,23 +83,25 @@ def list_all_accounts():
     return jsonify(message), response_status
 
 
-
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
 @app.route("/accounts/<int:account_id>", methods=["GET"])
-def get_accounts(account_id):
-    """
-    Reads an Account
-    This endpoint will read an Account based the account_id that is requested
-    """
-    app.logger.info("Request to read an Account with id: %s", account_id)
-
+def read_account(account_id: int):
+    """ Read an account depending on supplied ID """
+    app.logger.info("Request to read an account")
     account = Account.find(account_id)
-    if not account:
-        abort(status.HTTP_404_NOT_FOUND, f"Account with id [{account_id}] could not be found.")
 
-    return account.serialize(), status.HTTP_200_OK
+    if account is None:
+        app.logger.info("No account with ID %s found.", account_id)
+        response_status = status.HTTP_404_NOT_FOUND
+        message = f"Status Code: {response_status}"
+    else:
+        app.logger.info("Account with ID %s found.", account_id)
+        response_status = status.HTTP_200_OK
+        message = account.serialize()
+
+    return jsonify(message), response_status
 
 
 ######################################################################
@@ -153,8 +157,6 @@ def delete_account(account_id: int):
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
-
-
 def check_content_type(media_type):
     """Checks that the media type is correct"""
     content_type = request.headers.get("Content-Type")
